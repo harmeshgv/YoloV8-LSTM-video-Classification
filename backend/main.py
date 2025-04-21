@@ -3,6 +3,8 @@ import sys
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 import tempfile
+import uvicorn
+
 import pandas as pd
 
 # Add the parent directory of utils to the Python path
@@ -14,14 +16,14 @@ app = FastAPI()
 
 # Initialize the extractor
 extractor = ViolenceFeatureExtractor(
-    detection_model_path="models/yolov8n.pt",
-    pose_model_path="models/yolov8n-pose.pt"
+    detection_model_path="/models/yolov8n.pt",
+    pose_model_path="/models/yolov8n-pose.pt"
 )
 
 # Store processing results
 processing_results = {
-    "csv_path": r"C:\Users\harme\Desktop\git-hub\YoloV8-LSTM-video-Classification\extracted_feature_data\output_features.csv",
-    "video_path": r'C:\Users\harme\Desktop\git-hub\YoloV8-LSTM-video-Classification\video_data'
+    "csv_path": "/extracted_feature_data/output_features.csv",
+    "video_path": "/extracted_feature_data/"
 }
 
 @app.post("/process-video/")
@@ -76,5 +78,4 @@ async def get_sample_results():
     return df.head(5).to_dict(orient="records")
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 

@@ -21,7 +21,7 @@ if uploaded_file is not None:
             # Open the temp file and send it to the backend
             with open(tmp_file_path, 'rb') as f:
                 files = {'file': f}
-                response = requests.post("http://localhost:8000/process-video/", files=files)
+                response = requests.post("http://backend:8000/process-video/", files=files)
 
             if response.status_code == 200:
                 # Save and display the processed video
@@ -33,7 +33,7 @@ if uploaded_file is not None:
                 st.video(processed_video_path)
 
                 # Offer download link for the CSV results
-                csv_response = requests.get("http://localhost:8000/get-results/")
+                csv_response = requests.get("http://backend:8000/get-results/")
                 if csv_response.status_code == 200:
                     st.download_button(
                         label="Download Analysis Results",
