@@ -1,6 +1,4 @@
-torch==2.6.0+cu118
-torchvision==0.21.0+cu118
-torchaudio==2.6.0+cu118
+
 fastapi==0.115.12
 uvicorn==0.34.1
 pandas==2.2.3

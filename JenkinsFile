@@ -8,16 +8,15 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: main, url : 'https://github.com/harmeshgv/YoloV8-LSTM-video-Classification.git'
-            }
-        }
+                git url : 'https://github.com/harmeshgv/YoloV8-LSTM-video-Classification.git',
+            branch: 'main'
+        }}
 
         stage('Docker COmpose up') {
             steps {
-                script {
-                    sh "docker-compose down"
-                    dh "docker-compose up --build -d"
-                }
+                bat  'docker-compose down || exit 0'
+                bat  'docker-compose up --build -d'
+
             }
         }
     }
