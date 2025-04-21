@@ -2,7 +2,7 @@
 video_data/
 
 # Ignore the models directory
-models/
+*.pt
 
 # Ignore the virtual environment directory
 myenv/
