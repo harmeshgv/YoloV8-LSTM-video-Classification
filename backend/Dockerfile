@@ -4,6 +4,8 @@ FROM python:3.9-slim
 # Create working directory
 WORKDIR /app
 
+COPY /backend /app/
+
 RUN pip install -r requirements.txt 
 
 # Pre-download YOLOv8 and YOLOv8n-pose models
