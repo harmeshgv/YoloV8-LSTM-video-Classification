@@ -925,5 +925,4 @@ class ViolenceFeatureExtractor:
                     except Exception as e2:
                         print(f"Failed to save fallback CSV: {e2}")
 
-            return csv_data
-
+        return frame_width, frame_height

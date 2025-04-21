@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    environment {
+        COMPOSE_PROJECT_NAME = "myproject"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: main, url : 'https://github.com/harmeshgv/YoloV8-LSTM-video-Classification.git'
+            }
+        }
+
+        stage('Docker COmpose up') {
+            steps {
+                script {
+                    sh "docker-compose down"
+                    dh "docker-compose up --build -d"
+                }
+            }
+        }
+    }
+
+    post{
+        always{
+            echo 'pipeline started'
+        }
+    }
+}

@@ -38,15 +38,26 @@ def preprocess_data(df, frame_width, frame_height):
     max_distance = np.sqrt(frame_width**2 + frame_height**2)
     df['distance'] = df['distance'] / max_distance
     df['relative_distance'] = df['relative_distance'] / max_distance
+    
+    drop_columns = [f'person1_kp{i}_conf' for i in range(17)] + \
+               [f'person2_kp{i}_conf' for i in range(17)] + \
+               [f'relative_kp{i}_conf' for i in range(17)]
+    
+    existing_columns = [col for col in drop_columns if col in df.columns]
+    
+    df = df.drop(columns = existing_columns)
 
     # Normalize keypoints
     for i in range(17):
-        df[f'person1_kp{i}_x'] = df[f'person1_kp{i}_x'] / frame_width
-        df[f'person1_kp{i}_y'] = df[f'person1_kp{i}_y'] / frame_height
-        df[f'person2_kp{i}_x'] = df[f'person2_kp{i}_x'] / frame_width
-        df[f'person2_kp{i}_y'] = df[f'person2_kp{i}_y'] / frame_height
-        df[f'relative_kp{i}_x'] = df[f'relative_kp{i}_x'] / frame_width
-        df[f'relative_kp{i}_y'] = df[f'relative_kp{i}_y'] / frame_height
+        for prefix in ['person1_kp', 'person2_kp', 'relative_kp']:
+            x_col = f'{prefix}{i}_x'
+            y_col = f'{prefix}{i}_y'
+
+            if x_col in df.columns:
+                df[x_col] = df[x_col] / frame_width
+            if y_col in df.columns:
+                df[y_col] = df[y_col] / frame_height
+
 
     # Initialize the scaler
     scaler = MinMaxScaler()
@@ -56,5 +67,6 @@ def preprocess_data(df, frame_width, frame_height):
     df["relative_distance"] = scaler.fit_transform(df[["relative_distance"]])
     df["motion_average_speed"] = scaler.fit_transform(df[["motion_average_speed"]])
     df["motion_motion_intensity"] = scaler.fit_transform(df[["motion_motion_intensity"]])
+    df_columns = [column_name for column_name in df.columns]
 
-    return df
+    return df , df_columns
