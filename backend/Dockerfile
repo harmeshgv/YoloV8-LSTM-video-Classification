@@ -21,4 +21,4 @@ RUN mkdir -p /models && \
 EXPOSE 8000
 
 # Just to verify models exist
-CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
