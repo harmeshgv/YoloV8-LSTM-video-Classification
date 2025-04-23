@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: Viodetect-backend-image
-    container_name: Viodetect-backend
+    image: viodetect-backend-image
+    container_name: viodetect-backend
     ports:
       - "8000:8000"
     networks:
