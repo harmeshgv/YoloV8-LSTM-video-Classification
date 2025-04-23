@@ -11,13 +11,13 @@ pipeline {
 
         stage('Build Images') {
             steps {
-                sh 'docker-compose build'
+                powershell 'docker-compose build'
             }
         }
 
         stage('Run Containers') {
             steps {
-                sh 'docker-compose up -d'
+                powershell 'docker-compose up -d'
             }
         }
     }
