@@ -2,26 +2,26 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_PROJECT_NAME = "viodetect"
+        BACKEND_IMAGE = 'viodetect-backend-image'
+        FRONTEND_IMAGE = 'viodetect-frontend-image'
+        NETWORK_NAME = 'viodetect_mynetwork'
+        BACKEND_CONTAINER = 'viodetect-backend'
+        FRONTEND_CONTAINER = 'viodetect-frontend'
     }
 
     stages {
         stage('Clone Repo') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/harmeshgv/YoloV8-LSTM-video-Classification.git'
+                git 'https://github.com/harmeshgv/YoloV8-LSTM-video-Classification.git'
             }
         }
 
         stage('Build Docker Images') {
             steps {
                 script {
-                    // Ensure the Docker Compose file exists
-                    if (fileExists('docker-compose.yml')) {
-                        powershell 'docker-compose build'
-                    } else {
-                        error "docker-compose.yml not found!"
-                    }
+                    powershell """
+                    docker compose -f docker-compose.yml build
+                    """
                 }
             }
         }
@@ -29,7 +29,11 @@ pipeline {
         stage('Run Containers') {
             steps {
                 script {
-                    powershell 'docker-compose up -d'
+                    powershell """
+                    docker network create ${NETWORK_NAME}
+                    docker run -d --rm --name ${BACKEND_CONTAINER} --network ${NETWORK_NAME} -p 8000:8000 ${BACKEND_IMAGE}
+                    docker run -d --rm --name ${FRONTEND_CONTAINER} --network ${NETWORK_NAME} -p 8501:8501 ${FRONTEND_IMAGE}
+                    """
                 }
             }
         }
@@ -37,13 +41,18 @@ pipeline {
         stage('Check Backend Health') {
             steps {
                 script {
-                    sleep(time: 10, unit: 'SECONDS') // Wait for services to start
-                    def response = powershell(
-                        returnStdout: true,
-                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/docs'
-                    ).trim()
-                    if (response != "200") {
-                        error("Backend is not responding properly. Got status: ${response}")
+                    sleep 10
+                    def response = powershell(returnStdout: true, script: '''
+                    try {
+                        $status = (Invoke-WebRequest -Uri http://localhost:8000/docs -UseBasicParsing -TimeoutSec 10).StatusCode
+                        Write-Output $status
+                    } catch {
+                        Write-Output "ERROR"
+                    }
+                    ''').trim()
+
+                    if (response != '200') {
+                        error "Backend health check failed. HTTP Status: ${response}"
                     }
                 }
             }
@@ -52,8 +61,12 @@ pipeline {
 
     post {
         always {
-            echo "Cleaning up containers..."
-            powershell 'docker-compose down'
+            echo 'Cleaning up containers...'
+            powershell """
+            docker stop ${FRONTEND_CONTAINER}
+            docker stop ${BACKEND_CONTAINER}
+            docker network rm ${NETWORK_NAME}
+            """
         }
     }
 }
