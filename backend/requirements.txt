@@ -1,9 +1,9 @@
-
+ultralytics==8.3.107
 fastapi==0.115.12
 uvicorn==0.34.1
 pandas==2.2.3
 python-multipart==0.0.20
 scikit-learn==1.6.1
 numpy==1.26.3
-opencv-python
+opencv-python==4.7.0.72
 networkx==3.2.1

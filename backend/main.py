@@ -15,10 +15,7 @@ from utils.feature_extraction import ViolenceFeatureExtractor
 app = FastAPI()
 
 # Initialize the extractor
-extractor = ViolenceFeatureExtractor(
-    detection_model_path="/models/yolov8n.pt",
-    pose_model_path="/models/yolov8n-pose.pt"
-)
+extractor = ViolenceFeatureExtractor()
 
 # Store processing results
 processing_results = {

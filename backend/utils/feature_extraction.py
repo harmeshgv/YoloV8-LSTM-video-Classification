@@ -9,12 +9,14 @@ from ultralytics import YOLO
 # In feature_extraction.py
 from .preprocessor import FramePreprocessor
 class ViolenceFeatureExtractor:
-    def __init__(self, detection_model_path, pose_model_path):
+    def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._setup_gpu()
 
-        self.detection_model = YOLO(detection_model_path).to(self.device)
-        self.pose_model = YOLO(pose_model_path).to(self.device)
+        self.detection_model = YOLO("/models/yolov8n.pt").to(self.device)
+        self.pose_model = YOLO("/models/yolov8n-pose.pt").to(self.device)
+
+
 
         # Initialize preprocessor
         self.preprocessor = FramePreprocessor()
@@ -148,7 +150,6 @@ class ViolenceFeatureExtractor:
 
     # ... rest of your ViolenceFeatureExtractor methods ...
 
-# Fourth cell: Create instance and process video
 # Replace with your actual model paths
         
     def rescale_coords(self, x, y, scale_info):

@@ -1,24 +1,31 @@
-version: "3.8"
-
 services:
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    image: Viodetect-backend-image
+    container_name: Viodetect-backend
     ports:
       - "8000:8000"
     networks:
       - mynetwork
+    environment:
+      - PYTHONUNBUFFERED=1
+
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+    image: viodetect-frontend-image
+    container_name: viodetect-frontend
     ports:
       - "8501:8501"
     depends_on:
       - backend
     networks:
       - mynetwork
+    environment:
+      - BACKEND_URL=http://backend:8000
 
 networks:
   mynetwork:

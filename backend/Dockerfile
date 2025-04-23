@@ -1,24 +1,33 @@
-# Use Python base image
 FROM python:3.9-slim
 
-# Create working directory
+# Install system dependencies for OpenCV and other requirements
+RUN apt-get update && \
+    apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory to /app
 WORKDIR /app
 
-COPY /backend /app/
+# Copy the backend directory (including models) to the container
+COPY ./backend/ /app/
 
+# Upgrade pip to the latest version
 RUN pip install --upgrade pip
 
-RUN pip install -r requirements.txt 
+# Install the dependencies listed in requirements.txt
+RUN pip install -r /app/requirements.txt
 
-# Pre-download YOLOv8 and YOLOv8n-pose models
-RUN mkdir -p /models && \
-    apt-get update && \
-    apt-get install -y curl && \
-    curl -L https://github.com/ultralytics/assets/releases/download/v8.0.0/yolov8n.pt -o /models/yolov8n.pt && \
-    curl -L https://github.com/ultralytics/assets/releases/download/v8.0.0/yolov8n-pose.pt -o /models/yolov8n-pose.pt && \
-    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# Install PyTorch with CUDA support
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
+# Expose port 8000 for the FastAPI app
 EXPOSE 8000
 
-# Just to verify models exist
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Command to start the FastAPI app
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
