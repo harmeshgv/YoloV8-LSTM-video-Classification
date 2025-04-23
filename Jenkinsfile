@@ -10,11 +10,12 @@ pipeline {
     }
 
     stages {
-        stage('Clone Repo') {
-            steps {
-                git 'https://github.com/harmeshgv/YoloV8-LSTM-video-Classification.git'
-            }
-        }
+stage('Clone Repo') {
+    steps {
+        git branch: 'main', url: 'https://github.com/harmeshgv/YoloV8-LSTM-video-Classification.git'
+    }
+}
+
 
         stage('Build Docker Images') {
             steps {
