@@ -7,7 +7,7 @@ import time
 # Use backend service name in Docker network
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://backend:8000')
 
-st.title("Video Violence Detection")
+st.title("Video Violence Detection Containerization")
 
 uploaded_file = st.file_uploader("Choose a video file", type=["mp4", "avi", "mov"])
 
