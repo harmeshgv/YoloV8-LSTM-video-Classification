@@ -25,7 +25,7 @@ class FramePreprocessor:
             self.frame_skip = 1
             batch_size = 1
         else:  # HD or lower
-            self.frame_skip = 0
+            self.frame_skip = 1
             batch_size = 1
 
         print(f"Input resolution: {frame_width}x{frame_height}")

@@ -11,13 +11,23 @@ from .preprocessor import FramePreprocessor
 class ViolenceFeatureExtractor:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if self.device.type == 'cuda':
+        # Warm-up GPU
+            torch.zeros(1).to(self.device)  
+            torch.cuda.synchronize()
+        
+        # Configure for maximum performance
+            torch.backends.cudnn.benchmark = True
+            torch.set_float32_matmul_precision('high')
+            os.environ['CUDA_LAUNCH_BLOCKING'] = '1'  # For better error messages
         self._setup_gpu()
 
         self.detection_model = YOLO("/models/yolov8n.pt").to(self.device)
         self.pose_model = YOLO("/models/yolov8n-pose.pt").to(self.device)
 
 
-
+        print(f"Detection model on: {next(self.detection_model.model.parameters()).device}")
+        print(f"Pose model on: {next(self.pose_model.model.parameters()).device}")
         # Initialize preprocessor
         self.preprocessor = FramePreprocessor()
 
@@ -42,6 +52,14 @@ class ViolenceFeatureExtractor:
         self.tracked_persons = {}  # Dictionary to store tracked persons
         self.inactive_persons = {}  # Store persons who are temporarily out of frame
         self.inactive_timeout = 30  # Number of frames to keep a person in inactive state
+        
+    def reset(self):
+        self.person_id_counter = 0              # Counter for assigning new person IDs
+        self.person_tracker = {}                # Dict to hold person-specific tracking info
+        self.motion_history = {}                # Dict for storing past positions/speeds
+        self.keypoint_buffers = {}              # For temporal keypoint analysis
+        self.person_id_mapping = {}             # Optional: map temp person IDs across frames
+        self.seen_interactions = set()          # Clear seen interactions
 
     def _assign_person_ids(self, current_boxes):
         """Assign consistent IDs to persons across frames using IoU matching."""
@@ -148,9 +166,7 @@ class ViolenceFeatureExtractor:
         else:
             print("No GPU available. Using CPU.")
 
-    # ... rest of your ViolenceFeatureExtractor methods ...
 
-# Replace with your actual model paths
         
     def rescale_coords(self, x, y, scale_info):
        """Convert model coordinates back to original video dimensions"""
@@ -455,7 +471,8 @@ class ViolenceFeatureExtractor:
                 .unsqueeze(0)
                 .to(self.device)
             )
-
+            if frame_idx % 5 == 0:
+               torch.cuda.empty_cache()
             with torch.no_grad(), torch.amp.autocast(device_type="cuda", dtype=torch.float16):
                 det_results = self.detection_model(frame_tensor, conf=self.conf_threshold, verbose=False)
                 pose_results = self.pose_model(frame_tensor, conf=self.conf_threshold, verbose=False) if len(det_results[0].boxes) > 0 else []
@@ -466,6 +483,8 @@ class ViolenceFeatureExtractor:
                 "persons": [],
                 "objects": [],
                 "interactions": [],
+                  "resized_width": scale_info.get('resized_size', (0, 0))[1],  
+            "resized_height": scale_info.get('resized_size', (0, 0))[0]  
             }
 
             # Process detections
@@ -631,20 +650,29 @@ class ViolenceFeatureExtractor:
         else:
             return obj
 
-    def process_video(self, video_path, output_csv_path, output_folder=None, show_video=False):
+    def process_video(self, video_path, output_csv_path, output_folder=None, show_video=False, save_video=False):
         """
         Process a video file to extract pairwise interactions between all persons.
+        Args:
+            video_path: Path to the input video file
+            output_csv_path: Path to save the output CSV file
+            output_folder: Optional folder to save output video with detections
+            show_video: Whether to display the video during processing
+            save_video: Whether to save the output video with detections
+        Returns:
+            Tuple of (frame_width, frame_height) of the video
         """
-        # Initialize variables before try block
+        # Initialize variables
         cap = None
         video_writer = None
         csv_data = []
 
-        # Initialize a set to track seen interactions in the current frame
+
+        video_name = os.path.splitext(os.path.basename(video_path))[0]
+
         seen_interactions = set()
 
         try:
-            # Validate input video
             if not os.path.exists(video_path):
                 raise FileNotFoundError(f"Video file not found: {video_path}")
 
@@ -652,26 +680,23 @@ class ViolenceFeatureExtractor:
             if not cap.isOpened():
                 raise ValueError("Error: Could not open video file")
 
-            # Get video properties
             fps = cap.get(cv2.CAP_PROP_FPS)
             frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-            # Set appropriate configuration based on video resolution
             batch_size = self.preprocessor.set_resolution_config(frame_width, frame_height)
             self.frame_skip = self.preprocessor.frame_skip  # Update frame_skip based on resolution         
 
             print(f"Processing video: {frame_width}x{frame_height} at {fps} fps")
             print(f"Using frame_skip: {self.frame_skip}, batch_size: {batch_size}")
 
-            # Initialize video writer if output folder is provided
-            if output_folder:
+            if output_folder and save_video:
                 try:
                     os.makedirs(output_folder, exist_ok=True)
                     output_video_path = os.path.join(
                         output_folder, 
-                        f"{os.path.splitext(os.path.basename(video_path))[0]}_detections.mp4"
+                        f"{video_name}_detections.mp4"
                     )
                     video_writer = cv2.VideoWriter(
                         output_video_path,
@@ -686,32 +711,24 @@ class ViolenceFeatureExtractor:
                     print(f"Error creating video writer: {e}")
                     video_writer = None
 
-            # Define expected columns
             expected_columns = [
+                "video_name",
                 "frame_index", "timestamp", "person1_id", "person2_id",
-                "box1", "box2", "center1", "center2", "distance",
-                "person1_idx", "person2_idx", "relative_distance",
+                "box1_x_min", "box1_y_min", "box1_x_max", "box1_y_max",
+                "box2_x_min", "box2_y_min", "box2_x_max", "box2_y_max",
+                "center1_x", "center1_y", "center2_x", "center2_y",
+                "distance", "person1_idx", "person2_idx", "relative_distance",
                 "motion_average_speed", "motion_motion_intensity",
                 "motion_sudden_movements", "violence_aggressive_pose",
                 "violence_close_interaction", "violence_rapid_motion",
-                "violence_weapon_present", "keypoints"
+                "violence_weapon_present"
             ]
 
-            # Initialize or load existing CSV
-            try:
-                if os.path.exists(output_csv_path) and os.path.getsize(output_csv_path) > 0:
-                    existing_df = pd.read_csv(output_csv_path)
-                    # Add missing columns if they don't exist
-                    for col in expected_columns:
-                        if col not in existing_df.columns:
-                            existing_df[col] = None
-                else:
-                    existing_df = pd.DataFrame(columns=expected_columns)
-            except Exception as e:
-                print(f"Error loading existing CSV: {e}")
-                existing_df = pd.DataFrame(columns=expected_columns)
+            for prefix in ['person1_kp', 'person2_kp', 'relative_kp']:
+                for i in range(17):
+                    for dim in ['_x', '_y', '_conf']:
+                        expected_columns.append(f"{prefix}{i}{dim}")
 
-            # Main processing loop
             frame_idx = 0
             while True:
                 ret, frame = cap.read()
@@ -742,7 +759,10 @@ class ViolenceFeatureExtractor:
                             if interaction_id not in seen_interactions:
                                 seen_interactions.add(interaction_id)
 
+                                # Create base row data
                                 row = {
+                                    "video_name": video_name,
+
                                     "frame_index": frame_data["frame_index"],
                                     "timestamp": frame_data["timestamp"],
                                     "person1_id": interaction["person1_id"],
@@ -770,8 +790,49 @@ class ViolenceFeatureExtractor:
                                     "violence_close_interaction": interaction["violence_close_interaction"],
                                     "violence_rapid_motion": interaction["violence_rapid_motion"],
                                     "violence_weapon_present": interaction["violence_weapon_present"],
-                                    "keypoints": str(interaction["keypoints"])
                                 }
+
+                                # Add keypoints data
+                                keypoints_data = interaction["keypoints"]
+
+                                # Initialize all keypoint columns to None
+                                for prefix in ['person1_kp', 'person2_kp', 'relative_kp']:
+                                    for i in range(17):
+                                        for dim in ['_x', '_y', '_conf']:
+                                            row[f"{prefix}{i}{dim}"] = None
+
+                                # Fill in actual keypoint values if they exist
+                                if isinstance(keypoints_data, dict):
+                                    # Person1 keypoints
+                                    if 'person1' in keypoints_data and isinstance(keypoints_data['person1'], list):
+                                        for i, kp in enumerate(keypoints_data['person1']):
+                                            if i >= 17:
+                                                continue
+                                            if isinstance(kp, (list, tuple)) and len(kp) >= 3:
+                                                row[f'person1_kp{i}_x'] = float(kp[0])
+                                                row[f'person1_kp{i}_y'] = float(kp[1])
+                                                row[f'person1_kp{i}_conf'] = float(kp[2])
+
+                                    # Person2 keypoints
+                                    if 'person2' in keypoints_data and isinstance(keypoints_data['person2'], list):
+                                        for i, kp in enumerate(keypoints_data['person2']):
+                                            if i >= 17:
+                                                continue
+                                            if isinstance(kp, (list, tuple)) and len(kp) >= 3:
+                                                row[f'person2_kp{i}_x'] = float(kp[0])
+                                                row[f'person2_kp{i}_y'] = float(kp[1])
+                                                row[f'person2_kp{i}_conf'] = float(kp[2])
+
+                                    # Relative keypoints
+                                    if 'relative' in keypoints_data and isinstance(keypoints_data['relative'], list):
+                                        for i, kp in enumerate(keypoints_data['relative']):
+                                            if i >= 17:
+                                                continue
+                                            if isinstance(kp, (list, tuple)) and len(kp) >= 3:
+                                                row[f'relative_kp{i}_x'] = float(kp[0])
+                                                row[f'relative_kp{i}_y'] = float(kp[1])
+                                                row[f'relative_kp{i}_conf'] = float(kp[2])
+
                                 csv_data.append(row)
 
                         # Write frame to output video
@@ -817,93 +878,12 @@ class ViolenceFeatureExtractor:
                 cv2.destroyAllWindows()
             torch.cuda.empty_cache()
 
-
             try:
                 if csv_data:
-                    # Flatten keypoints data for each interaction
-                    flattened_data = []
-                    for interaction in csv_data:
-                        flat_interaction = interaction.copy()
+                    # Create DataFrame with all expected columns
+                    df = pd.DataFrame(csv_data)
 
-                        # Handle keypoints data which might be string or dict
-                        keypoints_str = flat_interaction.pop('keypoints', '{}')
-
-                        try:
-                            # Convert string representation to dictionary if needed
-                            if isinstance(keypoints_str, str):
-                                keypoints_data = ast.literal_eval(keypoints_str)
-                            else:
-                                keypoints_data = keypoints_str
-
-                            # Initialize all keypoint columns to None first
-                            for prefix in ['person1_kp', 'person2_kp', 'relative_kp']:
-                                for i in range(17):  # COCO format has 17 keypoints
-                                    for dim in ['_x', '_y', '_conf']:
-                                        flat_interaction[f"{prefix}{i}{dim}"] = None
-
-                            # Fill in actual values if they exist
-                            if isinstance(keypoints_data, dict):
-                                # Flatten person1 keypoints
-                                if 'person1' in keypoints_data and isinstance(keypoints_data['person1'], list):
-                                    for i, kp in enumerate(keypoints_data['person1']):
-                                        if i >= 17:
-                                            continue
-                                        if isinstance(kp, (list, tuple)) and len(kp) >= 3:
-                                            flat_interaction[f'person1_kp{i}_x'] = float(kp[0])
-                                            flat_interaction[f'person1_kp{i}_y'] = float(kp[1])
-                                            flat_interaction[f'person1_kp{i}_conf'] = float(kp[2])
-
-                                # Flatten person2 keypoints
-                                if 'person2' in keypoints_data and isinstance(keypoints_data['person2'], list):
-                                    for i, kp in enumerate(keypoints_data['person2']):
-                                        if i >= 17:
-                                            continue
-                                        if isinstance(kp, (list, tuple)) and len(kp) >= 3:
-                                            flat_interaction[f'person2_kp{i}_x'] = float(kp[0])
-                                            flat_interaction[f'person2_kp{i}_y'] = float(kp[1])
-                                            flat_interaction[f'person2_kp{i}_conf'] = float(kp[2])
-
-                                # Flatten relative keypoints
-                                if 'relative' in keypoints_data and isinstance(keypoints_data['relative'], list):
-                                    for i, kp in enumerate(keypoints_data['relative']):
-                                        if i >= 17:
-                                            continue
-                                        if isinstance(kp, (list, tuple)) and len(kp) >= 3:
-                                            flat_interaction[f'relative_kp{i}_x'] = float(kp[0])
-                                            flat_interaction[f'relative_kp{i}_y'] = float(kp[1])
-                                            flat_interaction[f'relative_kp{i}_conf'] = float(kp[2])
-
-                        except (ValueError, SyntaxError) as e:
-                            print(f"Error processing keypoints data: {e}")
-                            # Keep all keypoint columns as None if parsing fails
-
-                        flattened_data.append(flat_interaction)
-
-                    df = pd.DataFrame(flattened_data)
-
-                    # Define all expected columns (including keypoint columns)
-                    base_columns = [
-                        "frame_index", "timestamp", "person1_id", "person2_id",
-                        "box1_x_min", "box1_y_min", "box1_x_max", "box1_y_max",
-                        "box2_x_min", "box2_y_min", "box2_x_max", "box2_y_max",
-                        "center1_x", "center1_y", "center2_x", "center2_y",
-                        "distance", "person1_idx", "person2_idx", "relative_distance",
-                        "motion_average_speed", "motion_motion_intensity",
-                        "motion_sudden_movements", "violence_aggressive_pose",
-                        "violence_close_interaction", "violence_rapid_motion",
-                        "violence_weapon_present"
-                    ]
-
-                    # Add keypoint columns (assuming 17 keypoints per person as in COCO format)
-                    keypoint_columns = []
-                    for prefix in ['person1_kp', 'person2_kp', 'relative_kp']:
-                        for i in range(17):
-                            for dim in ['_x', '_y', '_conf']:
-                                keypoint_columns.append(f"{prefix}{i}{dim}")
-
-                    expected_columns = base_columns + keypoint_columns
-
-                    # Ensure all columns exist in the new DataFrame
+                    # Ensure all expected columns exist in the DataFrame
                     for col in expected_columns:
                         if col not in df.columns:
                             df[col] = None
@@ -914,16 +894,10 @@ class ViolenceFeatureExtractor:
                     # Save to CSV
                     df.to_csv(output_csv_path, index=False)
                     print(f"\nSuccessfully saved {len(csv_data)} interactions to {output_csv_path}")
+                    return frame_width, frame_height, len(csv_data)
                 else:
                     print("\nNo interactions were detected in the video")
+                    return frame_width, frame_height, 0
             except Exception as e:
                 print(f"\nError saving data to CSV: {str(e)}")
-                # Try saving just the new data if concatenation failed
-                if csv_data:
-                    try:
-                        pd.DataFrame(csv_data).to_csv(output_csv_path, index=False)
-                        print(f"Saved only new data to {output_csv_path}")
-                    except Exception as e2:
-                        print(f"Failed to save fallback CSV: {e2}")
-
-        return frame_width, frame_height
+                return frame_width, frame_height, 0
