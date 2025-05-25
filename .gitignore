@@ -5,3 +5,7 @@ video_data/
 
 # Ignore the virtual environment directory
 myenv/
+
+extracted_feature_data/
+
+*.csv
