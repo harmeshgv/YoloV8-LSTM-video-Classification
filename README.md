@@ -1,106 +1,276 @@
-data : https://www.kaggle.com/datasets/vulamnguyen/rwf2000
 
-Using the provided values from your DataFrame, you can perform various physical and mathematical calculations to derive meaningful insights. Here are some potential calculations and outputs you can obtain from the given features:
+![Logo](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/th5xamgrr6se0x5ro4g6.png)
 
-[x_min, y_min, x_max, y_max]
 
-### 1. **Bounding Box Calculations**
+# Smart Health LLm
 
-- **Width and Height**: Calculate the width and height of the bounding boxes from `box1` and `box2`.
-  - Width: `width = x_max - x_min`
-  - Height: `height = y_max - y_min`
-- **Area**: Calculate the area of the bounding boxes.
-  - Area: `area = width * height`
-- **Aspect Ratio**: Calculate the aspect ratio of the bounding boxes.
-  - Aspect Ratio: `aspect_ratio = width / height`
+A brief description of what this project does and who it's for
 
-### 2. **Distance Calculations**
 
-- **Euclidean Distance**: Calculate the Euclidean distance between the centers of the two boxes (`center1` and `center2`).
-  - Distance:
-    \[
-    \text{distance} = \sqrt{(center1_x - center2_x)^2 + (center1_y - center2_y)^2}
-    \]
-- **Relative Distance**: This is already provided as `relative_distance`, but you can also calculate it based on the bounding box sizes or distances.
+## Badges
 
-### 3. **Motion Analysis**
+Add badges from somewhere like: [shields.io](https://shields.io/)
 
-- **Speed Analysis**: Analyze the average speed of motion (`motion_average_speed`) to determine how fast the objects are moving.
-- **Motion Intensity**: Use `motion_motion_intensity` to assess how intense the motion is, which can be useful for detecting aggressive behavior.
-- **Sudden Movements**: Count the number of sudden movements (`motion_sudden_movements`) to identify erratic behavior.
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://opensource.org/licenses/)
+[![AGPL License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 
-### 4. **Violence Indicators**
 
-- **Aggressive Pose**: Use the `violence_aggressive_pose` indicator to assess whether the pose of the individuals is aggressive.
-- **Close Interaction**: Use the `violence_close_interaction` indicator to determine if the individuals are in close proximity, which may indicate potential conflict.
-- **Rapid Motion**: Use the `violence_rapid_motion` indicator to assess if there is rapid movement, which could be a sign of violence.
-- **Weapon Presence**: Use the `violence_weapon_present` indicator to check if a weapon is present.
+## Authors
 
-### 5. **Object Analysis**
+- [@octokatherine](https://www.github.com/octokatherine)
 
-- **Object Confidence**: Use `object_confidence` to assess the reliability of the detected objects.
-- **Class Distribution**: Analyze the distribution of object classes (e.g., "person") to understand the scene composition.
 
-### Example Code for Calculations
+## License
 
-Here’s how you can implement some of these calculations in Python:
+[MIT](https://choosealicense.com/licenses/mit/)
 
-```python
-import pandas as pd
-import numpy as np
 
-# Sample DataFrame (replace this with your actual DataFrame)
-data = {
-    'frame_index': [0, 1],
-    'timestamp': [0.0, 0.083333],
-    'box1': [[315.0, 220.75, 413.0, 490.25], [316.0, 221.0, 413.0, 490.5]],
-    'box2': [[277.0, 218.75, 336.0, 490.25], [277.25, 219.0, 336.25, 490.5]],
-    'center1': [[364.0, 355.5], [364.5, 355.75]],
-    'center2': [[306.5, 354.5], [306.75, 354.75]],
-    'distance': [57.508695, 57.758657],
-    'person1_idx': [0, 0],
-    'person2_idx': [1, 1],
-    'relative_distance': [0.002711, 0.002740],
-    'motion_average_speed': [np.nan, 1.191541],
-    'motion_motion_intensity': [np.nan, 1.290108],
-    'motion_sudden_movements': [np.nan, 1],
-    'violence_aggressive_pose': [True, True],
-    'violence_close_interaction': [True, True],
-    'violence_rapid_motion': [False, False],
-    'violence_weapon_present': [False, False],
-    'object_box': [[315.0, 220.75, 413.0, 490.25], [316.0, 221.0, 413.0, 490.5]],
-    'object_class': ['person', 'person'],
-    'object_confidence': [0.907227, 0.904297]
-}
+## Screenshots
 
-df = pd.DataFrame(data)
+![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
 
-# Function to calculate box features
-def calculate_box_features(box):
-    x_min, y_min, x_max, y_max = box
-    width = x_max - x_min
-    height = y_max - y_min
-    area = width * height
-    aspect_ratio = width / height if height != 0 else 0
-    return width, height, area, aspect_ratio
 
-# Apply the function to box1 and box2
-df[['box1_width', 'box1_height', 'box1_area', 'box1_aspect_ratio']] = df['box1'].apply(calculate_box_features).apply(pd.Series)
-df[['box2_width', 'box2_height', 'box2_area', 'box2_aspect_ratio']] = df['box2'].apply(calculate_box_features).apply(pd.Series)
+## Demo
 
-# Calculate Euclidean distance between centers
-df['center_distance'] = np.sqrt((df['center1'].apply(lambda x: x[0]) - df['center2'].apply(lambda x: x[0]))**2 +
-                                 (df['center1'].apply(lambda x: x[1]) - df['center2'].apply(lambda x: x[1]))**2)
+Insert gif or link to demo
 
-# Display the updated DataFrame with calculated features
-print(df)
+
+## Tech Stack
+
+**Client:** React, Redux, TailwindCSS
+
+**Server:** Node, Express
+
+
+## Features
+
+- Light/dark mode toggle
+- Live previews
+- Fullscreen mode
+- Cross platform
+
+
+## Run Locally
+
+Clone the project
+
+```bash
+  git clone https://link-to-project
 ```
 
-### Summary of Calculations
+Go to the project directory
 
-- **Bounding Box Features**: Width, height, area, and aspect ratio.
-- **Distance Calculations**: Euclidean distance between centers.
-- **Motion Analysis**: Average speed, motion intensity, and sudden movements.
-- **Violence Indicators**: Assess aggressive poses, close interactions, rapid motion, and weapon presence.
+```bash
+  cd my-project
+```
 
-These calculations can provide valuable insights into the behavior and interactions of the individuals in the frames, which can be useful for tasks such as action recognition, violence detection, or behavior analysis in video data.
+Install dependencies
+
+```bash
+  npm install
+```
+
+Start the server
+
+```bash
+  npm run start
+```
+
+
+## Installation
+
+Install my-project with npm
+
+```bash
+  npm install my-project
+  cd my-project
+```
+    
+## Environment Variables
+
+To run this project, you will need to add the following environment variables to your .env file
+
+`API_KEY`
+
+`ANOTHER_API_KEY`
+
+
+## Deployment
+
+To deploy this project run
+
+```bash
+  npm run deploy
+```
+
+
+## Usage/Examples
+
+```javascript
+import Component from 'my-project'
+
+function App() {
+  return <Component />
+}
+```
+
+
+## Running Tests
+
+To run tests, run the following command
+
+```bash
+  npm run test
+```
+
+
+## Documentation
+
+[Documentation](https://linktodocumentation)
+
+
+## API Reference
+
+#### Get all items
+
+```http
+  GET /api/items
+```
+
+| Parameter | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `api_key` | `string` | **Required**. Your API key |
+
+#### Get item
+
+```http
+  GET /api/items/${id}
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `id`      | `string` | **Required**. Id of item to fetch |
+
+#### add(num1, num2)
+
+Takes two numbers and returns the sum.
+
+
+## Optimizations
+
+What optimizations did you make in your code? E.g. refactors, performance improvements, accessibility
+
+
+## Lessons Learned
+
+What did you learn while building this project? What challenges did you face and how did you overcome them?
+
+
+## Roadmap
+
+- Additional browser support
+
+- Add more integrations
+
+
+## Appendix
+
+Any additional information goes here
+
+
+## Contributing
+
+Contributions are always welcome!
+
+See `contributing.md` for ways to get started.
+
+Please adhere to this project's `code of conduct`.
+
+
+## Support
+
+For support, email fake@fake.com or join our Slack channel.
+
+
+## Used By
+
+This project is used by the following companies:
+
+- Company 1
+- Company 2
+
+
+## Feedback
+
+If you have any feedback, please reach out to us at fake@fake.com
+
+
+## Acknowledgements
+
+ - [Awesome Readme Templates](https://awesomeopensource.com/project/elangosundar/awesome-README-templates)
+ - [Awesome README](https://github.com/matiassingers/awesome-readme)
+ - [How to write a Good readme](https://bulldogjob.com/news/449-how-to-write-a-good-readme-for-your-github-project)
+
+
+## FAQ
+
+#### Question 1
+
+Answer 1
+
+#### Question 2
+
+Answer 2
+
+
+## Related
+
+Here are some related projects
+
+[Awesome README](https://github.com/matiassingers/awesome-readme)
+
+
+# Hi, I'm Katherine! 👋
+
+
+## 🚀 About Me
+I'm a full stack developer...
+
+
+## 🛠 Skills
+Javascript, HTML, CSS...
+
+
+## Other Common Github Profile Sections
+👩‍💻 I'm currently working on...
+
+🧠 I'm currently learning...
+
+👯‍♀️ I'm looking to collaborate on...
+
+🤔 I'm looking for help with...
+
+💬 Ask me about...
+
+📫 How to reach me...
+
+😄 Pronouns...
+
+⚡️ Fun fact...
+
+
+## 🔗 Links
+[![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://katherineoelsner.com/)
+[![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/)
+[![twitter](https://img.shields.io/badge/twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/)
+
+## Color Reference
+
+| Color             | Hex                                                                |
+| ----------------- | ------------------------------------------------------------------ |
+| Example Color | ![#0a192f](https://via.placeholder.com/10/0a192f?text=+) #0a192f |
+| Example Color | ![#f8f8f8](https://via.placeholder.com/10/f8f8f8?text=+) #f8f8f8 |
+| Example Color | ![#00b48a](https://via.placeholder.com/10/00b48a?text=+) #00b48a |
+| Example Color | ![#00d1a0](https://via.placeholder.com/10/00b48a?text=+) #00d1a0 |
+
