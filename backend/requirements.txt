@@ -5,5 +5,5 @@ pandas==2.2.3
 python-multipart==0.0.20
 scikit-learn==1.6.1
 numpy==1.26.3
-opencv-python==4.7.0.72
+opencv-python==4.8.1.78
 networkx==3.2.1
