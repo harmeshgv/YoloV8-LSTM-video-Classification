@@ -11,3 +11,5 @@ extracted_feature_data/
 *.csv
 
 __pycache__/
+
+*.pklbackend/utils/random_forest_model.pkl
