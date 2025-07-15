@@ -9,3 +9,5 @@ myenv/
 extracted_feature_data/
 
 *.csv
+
+__pycache__/
