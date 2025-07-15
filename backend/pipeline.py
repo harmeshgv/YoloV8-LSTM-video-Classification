@@ -5,10 +5,16 @@ import torch
 import cv2
 import os
 from ultralytics import YOLO
-from .gpu import GPUConfigurator
-from .preprocessor import FramePreprocessor
+import sys 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from .visualizer import Visualizer
+from backend.utils.gpu import GPUConfigurator
+
+from backend.utils.preprocessor import FramePreprocessor
+
+from backend.utils.visualizer import Visualizer
+from backend.config import POSE_MODEL, DETECT_MODEL
+
 
 class ViolenceFeatureExtractor:
     def __init__(self):
@@ -17,8 +23,8 @@ class ViolenceFeatureExtractor:
         self.device = self.gpu_config.device  # Now properly initialized
 
         # Initialize models with the device
-        self.detection_model = YOLO("/models/yolov8n.pt").to(self.device)
-        self.pose_model = YOLO("/models/yolov8n-pose.pt").to(self.device)
+        self.detection_model = YOLO(DETECT_MODEL).to(self.device)
+        self.pose_model = YOLO(POSE_MODEL).to(self.device)
 
         print(f"Detection model on: {next(self.detection_model.model.parameters()).device}")
         print(f"Pose model on: {next(self.pose_model.model.parameters()).device}")
