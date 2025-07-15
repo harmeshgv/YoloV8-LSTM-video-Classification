@@ -1,38 +1,34 @@
+# backend/utils/feature_extraction.py
 import pandas as pd
 import numpy as np
 import torch
 import cv2
 import os
-import ast
 from ultralytics import YOLO
-
-# In feature_extraction.py
+from .gpu import GPUConfigurator
 from .preprocessor import FramePreprocessor
+
 class ViolenceFeatureExtractor:
     def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if self.device.type == 'cuda':
-        # Warm-up GPU
-            torch.zeros(1).to(self.device)  
-            torch.cuda.synchronize()
-        
-        # Configure for maximum performance
-            torch.backends.cudnn.benchmark = True
-            torch.set_float32_matmul_precision('high')
-            os.environ['CUDA_LAUNCH_BLOCKING'] = '1'  # For better error messages
-        self._setup_gpu()
+        # Initialize GPU configuration first
+        self.gpu_config = GPUConfigurator()
+        self.device = self.gpu_config.device  # Now properly initialized
 
+        # Initialize models with the device
         self.detection_model = YOLO("/models/yolov8n.pt").to(self.device)
         self.pose_model = YOLO("/models/yolov8n-pose.pt").to(self.device)
 
-
         print(f"Detection model on: {next(self.detection_model.model.parameters()).device}")
         print(f"Pose model on: {next(self.pose_model.model.parameters()).device}")
+
         # Initialize preprocessor
         self.preprocessor = FramePreprocessor()
 
+        # Rest of your initialization...
         self.violence_objects = ["knife", "gun", "baseball bat", "stick", "bottle"]
         self.relevant_classes = ["person"] + self.violence_objects
+        
+        # ... rest of your existing code ...
 
         self.colors = {
             "violence": (0, 0, 255),  # Red
@@ -153,19 +149,6 @@ class ViolenceFeatureExtractor:
         union_area = box1_area + box2_area - inter_area
         
         return inter_area / union_area if union_area > 0 else 0
-
-    # ... rest of your ViolenceFeatureExtractor methods ...
-    # ... rest of your ViolenceFeatureExtractor methods ...
-    def _setup_gpu(self):
-        """Configure GPU settings if available."""
-        if torch.cuda.is_available():
-            torch.backends.cudnn.benchmark = True
-            torch.backends.cudnn.deterministic = False
-            torch.cuda.empty_cache()
-            print(f"Using GPU: {torch.cuda.get_device_name(0)}")
-        else:
-            print("No GPU available. Using CPU.")
-
 
         
     def rescale_coords(self, x, y, scale_info):
