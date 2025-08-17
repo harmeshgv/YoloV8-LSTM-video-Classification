@@ -1,5 +1,5 @@
 import cv2
-from .preprocessor import FramePreprocessor
+from ..preprocessing.preprocessor import FramePreprocessor
 
 
 class Visualizer:

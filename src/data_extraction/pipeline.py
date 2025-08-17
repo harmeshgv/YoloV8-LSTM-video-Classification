@@ -8,13 +8,13 @@ from ultralytics import YOLO
 import sys 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from backend.utils.gpu import GPUConfigurator
+from src.utils.gpu import GPUConfigurator
 
-from backend.utils.preprocessor import FramePreprocessor
+from src.preprocessing.preprocessor import FramePreprocessor
 
-from backend.utils.visualizer import Visualizer
-from backend.interaction import Interaction
-from backend.config import POSE_MODEL, DETECT_MODEL
+from src.utils.visualizer import Visualizer
+from src.data_extraction.interaction import Interaction
+from src.config import POSE_MODEL, DETECT_MODEL
 
 
 class ViolenceFeatureExtractor:
@@ -183,7 +183,7 @@ class ViolenceFeatureExtractor:
             "resized_height": scale_info.get('resized_size', (0, 0))[0]  
             }
 
-            # Process detections
+            # Process detections 
             person_boxes = []
             for result in det_results:
                 for box in result.boxes:
@@ -381,8 +381,7 @@ class ViolenceFeatureExtractor:
             frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-            batch_size = self.preprocessor.set_resolution_config(frame_width, frame_height)
-            self.frame_skip = self.preprocessor.frame_skip  # Update frame_skip based on resolution         
+            batch_size, self.frame_skip = self.preprocessor.set_resolution_config(frame_width, frame_height)
 
             print(f"Processing video: {frame_width}x{frame_height} at {fps} fps")
             print(f"Using frame_skip: {self.frame_skip}, batch_size: {batch_size}")

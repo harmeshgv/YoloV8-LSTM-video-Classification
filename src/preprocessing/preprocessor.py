@@ -16,23 +16,19 @@ class FramePreprocessor:
         
         # Adjust configuration based on resolution
         if max_dim > 2560:  # 4K
-            self.frame_skip = 1
+            self.frame_skip = 2
             batch_size = 1
         elif max_dim > 1920:  # 2K
-            self.frame_skip = 1
+            self.frame_skip = 2
             batch_size = 1
         elif max_dim > 1280:  # Full HD
             self.frame_skip = 1
-            batch_size = 1
+            batch_size = 2
         else:  # HD or lower
             self.frame_skip = 1
-            batch_size = 1
+            batch_size = 4
 
-        print(f"Input resolution: {frame_width}x{frame_height}")
-        print(f"Frame skip: {self.frame_skip}")
-        print(f"Batch size: {batch_size}")
-        
-        return batch_size
+        return batch_size, self.frame_skip
 
     def preprocess_frame(self, frame):
         """Preprocess frame while maintaining aspect ratio and handling high-res inputs"""

@@ -10,7 +10,7 @@ import pandas as pd
 # Add the parent directory of utils to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from backend.pipeline import ViolenceFeatureExtractor
+from src.data_extraction.pipeline import ViolenceFeatureExtractor
 
 app = FastAPI()
 
