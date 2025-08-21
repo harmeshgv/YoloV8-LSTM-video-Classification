@@ -9,7 +9,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.utils.gpu import GPUConfigurator
-
+from src.utils.state_manager import get_person_id_counter, set_person_id_counter
 from src.preprocessing.preprocessor import FramePreprocessor
 
 from src.utils.visualizer import Visualizer
@@ -68,9 +68,9 @@ class ViolenceFeatureExtractor:
         if not self.tracked_persons:
             # First frame - assign new IDs to all
             for box in current_boxes:
-                person_id = self.person_id_counter
+                person_id = get_person_id_counter()
                 new_tracked[person_id] = box
-                self.person_id_counter += 1
+                set_person_id_counter(get_person_id_counter() + 1)
         else:
             # Calculate IoU between current boxes and previous boxes
             current_boxes_np = np.array([box[:4] for box in current_boxes])  # Ensure we only use x1,y1,x2,y2
@@ -99,9 +99,9 @@ class ViolenceFeatureExtractor:
                 # Assign new IDs to unmatched boxes
                 for i, box in enumerate(current_boxes_np):
                     if i not in [pair[0] for pair in matched_pairs]:
-                        person_id = self.person_id_counter
+                        person_id = get_person_id_counter()
                         new_tracked[person_id] = box
-                        self.person_id_counter += 1
+                        set_person_id_counter(get_person_id_counter() + 1)
 
         self.tracked_persons = new_tracked
         return new_tracked
@@ -227,7 +227,7 @@ class ViolenceFeatureExtractor:
                         continue
 
                     matched_ids = [k for k, v in self.tracked_persons.items() if np.array_equal(v, box)]
-                    person_id = matched_ids[0] if matched_ids else self.person_id_counter
+                    person_id = matched_ids[0] if matched_ids else get_person_id_counter()
 
                     frame_data["persons"].append({
                         "person_idx": i,
@@ -239,7 +239,7 @@ class ViolenceFeatureExtractor:
 
                     if not matched_ids:
                         self.tracked_persons[person_id] = box
-                        self.person_id_counter += 1
+                        set_person_id_counter(get_person_id_counter() + 1)
 
                 except Exception as e:
                     print(f"Skipping person {i} due to error: {e}")

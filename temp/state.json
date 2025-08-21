@@ -1,7 +1,3 @@
 {
-    "state": {
-        "batch_size": null,
-        "frame_skip": null
-    }
-}
+    "person_id_counter" : 0}
   
