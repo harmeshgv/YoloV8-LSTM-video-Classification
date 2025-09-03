@@ -1,8 +1,15 @@
 import os
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# Model paths
+DETECT_MODEL = "yolov8n.pt"
+POSE_MODEL = "yolov8n-pose.pt"
 
-POSE_MODEL = os.path.join(BASE_DIR,"src", "models","yolo8n-pose.pt")
-DETECT_MODEL = os.path.join(BASE_DIR,"src", "models","yolo8n.pt")
+# Extraction parameters
+CONF_THRESHOLD = 0.3
+INACTIVE_TIMEOUT = 30
+FRAME_SKIP = 2
+INPUT_SIZE = 640
 
-STATE_FILE = os.path.join(BASE_DIR, "temp", "state.json")
+# Output directory
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
+os.makedirs(OUTPUT_DIR, exist_ok=True)

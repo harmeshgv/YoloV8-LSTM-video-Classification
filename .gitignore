@@ -15,3 +15,5 @@ __pycache__/
 *.pkl
 
 backend/utils/random_forest_model.pkl
+
+venv/

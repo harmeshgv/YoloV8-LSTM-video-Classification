@@ -1,14 +1,9 @@
-import numpy as np
 import cv2
-from ultralytics import YOLO
-from collections import defaultdict
+import numpy as np
 
-# Second cell: FramePreprocessor class
 class FramePreprocessor:
-    def __init__(self):
-        self.max_input_size = 1920
-        self.input_size = 640  # YOLO model input size
-        self.frame_skip = 2
+    def __init__(self, input_size=640):
+        self.input_size = input_size
         
     def set_resolution_config(self, frame_width, frame_height):
         """Set appropriate configuration based on video resolution"""
@@ -16,19 +11,19 @@ class FramePreprocessor:
         
         # Adjust configuration based on resolution
         if max_dim > 2560:  # 4K
-            self.frame_skip = 2
+            frame_skip = 2
             batch_size = 1
         elif max_dim > 1920:  # 2K
-            self.frame_skip = 2
+            frame_skip = 2
             batch_size = 1
         elif max_dim > 1280:  # Full HD
-            self.frame_skip = 1
+            frame_skip = 1
             batch_size = 2
         else:  # HD or lower
-            self.frame_skip = 1
+            frame_skip = 1
             batch_size = 4
 
-        return batch_size, self.frame_skip
+        return batch_size, frame_skip
 
     def preprocess_frame(self, frame):
         """Preprocess frame while maintaining aspect ratio and handling high-res inputs"""
@@ -54,10 +49,6 @@ class FramePreprocessor:
 
             # Place resized image on canvas
             canvas[pad_h:pad_h + target_h, pad_w:pad_w + target_w] = resized
-
-            # Debugging: Log the dimensions and padding
-            print(f"Original size: {original_w}x{original_h}, Resized size: {target_w}x{target_h}")
-            print(f"Padding: (pad_w: {pad_w}, pad_h: {pad_h})")
 
             # Normalize
             normalized = canvas.astype(np.float32) / 255.0

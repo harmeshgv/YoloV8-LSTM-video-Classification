@@ -1,4 +1,3 @@
-# backend/utils/gpu.py
 import torch
 import os
 
