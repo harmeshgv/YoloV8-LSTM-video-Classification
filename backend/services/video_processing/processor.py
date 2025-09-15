@@ -4,9 +4,8 @@ import torch
 import pandas as pd
 from tqdm import tqdm
 
-from ...utils.gpu import GPUConfigurator
-from ...pipelines.video_preprocessor import VideoDataExtractor
-
+from backend.utils.gpu import GPUConfigurator
+from backend.pipelines.video_preprocessor import VideoDataExtractor
 
 class VideoProcessor:
     def __init__(self):
