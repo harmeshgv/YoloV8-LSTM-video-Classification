@@ -1,10 +1,10 @@
 import torch
-from backend.config import DETECT_MODEL, POSE_MODEL, CONF_THRESHOLD
-from backend.utils.gpu import GPUConfigurator
-from backend.preprocessing.preprocessor import FramePreprocessor
-from backend.data_extraction.interaction_analyzer import InteractionAnalyzer
-from backend.data_extraction.person_tracker import PersonTracker
-from backend.utils.visualizer import Visualizer
+from ...config import DETECT_MODEL, POSE_MODEL, CONF_THRESHOLD
+from ...utils.gpu import GPUConfigurator
+from ...preprocessing.preprocessor import FramePreprocessor
+from ...data_extraction.interaction_analyzer import InteractionAnalyzer
+from ...data_extraction.person_tracker import PersonTracker
+from ...utils.visualizer import Visualizer
 import numpy as np
 from ultralytics import YOLO
 
