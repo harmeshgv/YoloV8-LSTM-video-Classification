@@ -1,9 +1,10 @@
 import numpy as np
 
+
 class InteractionAnalyzer:
     def __init__(self, interaction_threshold=0.5):
         self.interaction_threshold = interaction_threshold
-        
+
     def calculate_motion_features(self, prev_poses, current_poses):
         """Calculate motion features between consecutive frames."""
         try:
@@ -40,7 +41,7 @@ class InteractionAnalyzer:
     def calculate_interactions(self, person_boxes, current_poses, tracked_persons):
         """Calculate interactions between people."""
         interactions = []
-        
+
         if len(person_boxes) < 2:
             return interactions
 
@@ -66,8 +67,13 @@ class InteractionAnalyzer:
 
                     center1 = [(box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2]
                     center2 = [(box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2]
-                    distance = np.sqrt((center1[0] - center2[0]) ** 2 + (center1[1] - center2[1]) ** 2)
-                    avg_size = ((box1[2]-box1[0])*(box1[3]-box1[1]) + (box2[2]-box2[0])*(box2[3]-box2[1])) / 2
+                    distance = np.sqrt(
+                        (center1[0] - center2[0]) ** 2 + (center1[1] - center2[1]) ** 2
+                    )
+                    avg_size = (
+                        (box1[2] - box1[0]) * (box1[3] - box1[1])
+                        + (box2[2] - box2[0]) * (box2[3] - box2[1])
+                    ) / 2
 
                     interaction = {
                         "person1_idx": i,
@@ -79,12 +85,12 @@ class InteractionAnalyzer:
                         "center1": center1,
                         "center2": center2,
                         "distance": distance,
-                        "relative_distance": distance / (avg_size ** 0.5),
+                        "relative_distance": distance / (avg_size**0.5),
                         "keypoints": {
                             "person1": pose1,
                             "person2": pose2,
-                            "relative": (np.array(pose2) - np.array(pose1)).tolist()
-                        }
+                            "relative": (np.array(pose2) - np.array(pose1)).tolist(),
+                        },
                     }
                     interactions.append(interaction)
                 except Exception as e:

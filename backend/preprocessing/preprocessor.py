@@ -1,14 +1,15 @@
 import cv2
 import numpy as np
 
+
 class FramePreprocessor:
     def __init__(self, input_size=640):
         self.input_size = input_size
-        
+
     def set_resolution_config(self, frame_width, frame_height):
         """Set appropriate configuration based on video resolution"""
         max_dim = max(frame_width, frame_height)
-        
+
         # Adjust configuration based on resolution
         if max_dim > 2560:  # 4K
             frame_skip = 2
@@ -38,7 +39,9 @@ class FramePreprocessor:
             target_h = int(original_h * scale)
 
             # Resize image
-            resized = cv2.resize(frame_rgb, (target_w, target_h), interpolation=cv2.INTER_AREA)
+            resized = cv2.resize(
+                frame_rgb, (target_w, target_h), interpolation=cv2.INTER_AREA
+            )
 
             # Create square canvas
             canvas = np.zeros((self.input_size, self.input_size, 3), dtype=np.uint8)
@@ -48,18 +51,18 @@ class FramePreprocessor:
             pad_w = (self.input_size - target_w) // 2
 
             # Place resized image on canvas
-            canvas[pad_h:pad_h + target_h, pad_w:pad_w + target_w] = resized
+            canvas[pad_h : pad_h + target_h, pad_w : pad_w + target_w] = resized
 
             # Normalize
             normalized = canvas.astype(np.float32) / 255.0
 
             # Store scaling info
             scale_info = {
-                'scale': scale,
-                'pad_w': pad_w,
-                'pad_h': pad_h,
-                'original_size': (original_h, original_w),
-                'resized_size': (target_h, target_w)
+                "scale": scale,
+                "pad_w": pad_w,
+                "pad_h": pad_h,
+                "original_size": (original_h, original_w),
+                "resized_size": (target_h, target_w),
             }
 
             return normalized, scale_info
@@ -71,10 +74,10 @@ class FramePreprocessor:
     def rescale_coords(self, x, y, scale_info):
         """Convert model coordinates back to original video dimensions"""
         try:
-            scale = scale_info['scale']
-            pad_w = scale_info['pad_w']
-            pad_h = scale_info['pad_h']
-            original_h, original_w = scale_info['original_size']
+            scale = scale_info["scale"]
+            pad_w = scale_info["pad_w"]
+            pad_h = scale_info["pad_h"]
+            original_h, original_w = scale_info["original_size"]
 
             # Remove padding and scale back to original dimensions
             x_orig = int((x - pad_w) / scale)

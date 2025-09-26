@@ -8,6 +8,7 @@ from backend.utils.visualizer import Visualizer
 import numpy as np
 from ultralytics import YOLO
 
+
 class VideoFeatureExtractor:
     def __init__(self):
         self.gpu_config = GPUConfigurator()
@@ -20,7 +21,7 @@ class VideoFeatureExtractor:
         self.interaction_analyzer = InteractionAnalyzer()
         self.person_tracker = PersonTracker()
         self.visualizer = Visualizer()
-        
+
         self.conf_threshold = CONF_THRESHOLD
         self.prev_poses = None
 
@@ -43,13 +44,24 @@ class VideoFeatureExtractor:
                 .unsqueeze(0)
                 .to(self.device)
             )
-            
+
             if frame_idx % 5 == 0:
                 torch.cuda.empty_cache()
-                
-            with torch.no_grad(), torch.amp.autocast(device_type="cuda", dtype=torch.float16):
-                det_results = self.detection_model(frame_tensor, conf=self.conf_threshold, verbose=False)
-                pose_results = self.pose_model(frame_tensor, conf=self.conf_threshold, verbose=False) if len(det_results[0].boxes) > 0 else []
+
+            with (
+                torch.no_grad(),
+                torch.amp.autocast(device_type="cuda", dtype=torch.float16),
+            ):
+                det_results = self.detection_model(
+                    frame_tensor, conf=self.conf_threshold, verbose=False
+                )
+                pose_results = (
+                    self.pose_model(
+                        frame_tensor, conf=self.conf_threshold, verbose=False
+                    )
+                    if len(det_results[0].boxes) > 0
+                    else []
+                )
 
             frame_data = {
                 "frame_index": frame_idx,
@@ -57,11 +69,11 @@ class VideoFeatureExtractor:
                 "persons": [],
                 "objects": [],
                 "interactions": [],
-                "resized_width": scale_info.get('resized_size', (0, 0))[1],  
-                "resized_height": scale_info.get('resized_size', (0, 0))[0]  
+                "resized_width": scale_info.get("resized_size", (0, 0))[1],
+                "resized_height": scale_info.get("resized_size", (0, 0))[0],
             }
 
-            # Process detections 
+            # Process detections
             person_boxes = []
             for result in det_results:
                 for box in result.boxes:
@@ -71,11 +83,13 @@ class VideoFeatureExtractor:
                         if cls == "person":
                             person_boxes.append(box_coords)
                         else:
-                            frame_data["objects"].append({
-                                "class": cls,
-                                "confidence": float(box.conf[0]),
-                                "box": box_coords
-                            })
+                            frame_data["objects"].append(
+                                {
+                                    "class": cls,
+                                    "confidence": float(box.conf[0]),
+                                    "box": box_coords,
+                                }
+                            )
                     except Exception as e:
                         print(f"Detection processing error: {e}")
                         continue
@@ -114,13 +128,15 @@ class VideoFeatureExtractor:
                     if person_id is None:
                         continue
 
-                    frame_data["persons"].append({
-                        "person_idx": i,
-                        "person_id": person_id,
-                        "box": box,
-                        "center": [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2],
-                        "keypoints": pose
-                    })
+                    frame_data["persons"].append(
+                        {
+                            "person_idx": i,
+                            "person_id": person_id,
+                            "box": box,
+                            "center": [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2],
+                            "keypoints": pose,
+                        }
+                    )
 
                 except Exception as e:
                     print(f"Skipping person {i} due to error: {e}")
@@ -130,18 +146,24 @@ class VideoFeatureExtractor:
             motion_features = {
                 "average_speed": 0,
                 "motion_intensity": 0,
-                "sudden_movements": 0
+                "sudden_movements": 0,
             }
             if self.prev_poses and current_poses:
                 try:
-                    motion_features = self.interaction_analyzer.calculate_motion_features(self.prev_poses, current_poses)
+                    motion_features = (
+                        self.interaction_analyzer.calculate_motion_features(
+                            self.prev_poses, current_poses
+                        )
+                    )
                 except Exception as e:
                     print(f"Motion calculation error: {e}")
             self.prev_poses = current_poses
 
             # Create interactions
-            frame_data["interactions"] = self.interaction_analyzer.calculate_interactions(
-                person_boxes, current_poses, tracked_persons
+            frame_data["interactions"] = (
+                self.interaction_analyzer.calculate_interactions(
+                    person_boxes, current_poses, tracked_persons
+                )
             )
 
             # Add motion features to frame data
@@ -152,7 +174,7 @@ class VideoFeatureExtractor:
             )
 
             return frame_data, annotated_frame
-            
+
         except Exception as e:
             print(f"Frame {frame_idx} failed completely: {e}")
             return None, frame

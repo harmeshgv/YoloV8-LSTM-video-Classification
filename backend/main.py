@@ -29,12 +29,15 @@ async def process_video(file: UploadFile = File(...)):
             input_path = input_video.name
 
         output_csv = tempfile.NamedTemporaryFile(delete=False, suffix=".csv").name
-        output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+        output_video_path = tempfile.NamedTemporaryFile(
+            delete=False, suffix=".mp4"
+        ).name
 
         frame_w, frame_h, num_interactions = processor.process_video(
-            input_path, output_csv,
+            input_path,
+            output_csv,
             output_folder=os.path.dirname(output_video_path),
-            save_video=True
+            save_video=True,
         )
 
         job_id = str(uuid.uuid4())
@@ -44,7 +47,7 @@ async def process_video(file: UploadFile = File(...)):
             "job_id": job_id,
             "message": f"Processed video with {num_interactions} interactions",
             "frame_width": frame_w,
-            "frame_height": frame_h
+            "frame_height": frame_h,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -60,8 +63,9 @@ async def get_results(job_id: str):
     csv_path = jobs[job_id]["csv"]
     if not os.path.exists(csv_path):
         raise HTTPException(status_code=404, detail="CSV file not found")
-    return FileResponse(csv_path, media_type="text/csv",
-                        filename="violence_analysis_results.csv")
+    return FileResponse(
+        csv_path, media_type="text/csv", filename="violence_analysis_results.csv"
+    )
 
 
 @app.get("/sample-results/{job_id}")
