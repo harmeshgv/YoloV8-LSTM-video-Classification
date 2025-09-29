@@ -6,12 +6,12 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 import uvicorn
 
-from backend.services.video_processing.processor import VideoProcessor
+from backend.services.video_data_extraction.video_preprocessor import VideoDataExtractor
 from backend.services.prediction.predictor import ViolencePredictor
 
 app = FastAPI(title="Video Analysis Backend")
 
-processor = VideoProcessor()
+processor = VideoDataExtractor()
 predictor = ViolencePredictor()
 jobs: dict[str, dict] = {}
 
@@ -33,7 +33,7 @@ async def process_video(file: UploadFile = File(...)):
             delete=False, suffix=".mp4"
         ).name
 
-        frame_w, frame_h, num_interactions = processor.process_video(
+        frame_w, frame_h, num_interactions = processor.extract_video_data(
             input_path,
             output_csv,
             output_folder=os.path.dirname(output_video_path),

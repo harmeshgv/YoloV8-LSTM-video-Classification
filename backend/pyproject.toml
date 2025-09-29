@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yolov8_lstm_backend"
+version = "0.1.0"
+description = "YOLOv8 + LSTM video classification backend"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.9"
+
+# ✅ Add all your runtime dependencies here
+dependencies = [
+"pandas",
+    "opencv-python",
+    "tqdm",
+    "opencv-python",
+    "ultralytics",
+    "scikit-learn",
+    "torch"]
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+

@@ -1,0 +1,7 @@
+uvicorn
+pandas
+fastapi
+opencv-python
+ultralytics
+scikit-learn
+python-multipart

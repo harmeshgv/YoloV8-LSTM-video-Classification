@@ -5,11 +5,11 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from backend.services.video_processing.processor import VideoProcessor
+from backend.services.video_data_extraction.video_preprocessor import VideoDataExtractor
 from backend.services.prediction.predictor import ViolencePredictor
 import tempfile
 
-processor = VideoProcessor()
+processor = VideoDataExtractor()
 predictor = ViolencePredictor()
 
 st.title("Video Violence Analysis")
@@ -23,7 +23,7 @@ if uploaded_file:
     # Process video (same as FastAPI)
     output_csv = tempfile.NamedTemporaryFile(delete=False, suffix=".csv").name
     output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-    frame_w, frame_h, num_interactions = processor.process_video(
+    frame_w, frame_h, num_interactions = processor.extract_video_data(
         input_path, output_csv, save_video=True, output_folder=None
     )
 

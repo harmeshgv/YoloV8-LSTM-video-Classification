@@ -1,45 +1,68 @@
 import numpy as np
+from backend.utils.motion_utils import (
+    calc_avg_speed,
+    calc_motion_intensity,
+    calc_sudden_movements,
+)
+from backend.utils.interaction_utils import (
+    get_box_center,
+    euclidean_distance,
+    relative_distance,
+    relative_keypoints,
+)
 
 
 class InteractionAnalyzer:
-    def __init__(self, interaction_threshold=0.5):
-        self.interaction_threshold = interaction_threshold
+    """
+    Analyze human motion and interactions between people based on poses and bounding boxes.
+    """
 
-    def calculate_motion_features(self, prev_poses, current_poses):
-        """Calculate motion features between consecutive frames."""
-        try:
-            if not prev_poses or not current_poses:
-                return {
-                    "average_speed": 0,
-                    "motion_intensity": 0,
-                    "sudden_movements": 0,
-                }
+    def __init__(self):
+        # You can later add thresholds or state here if needed
+        pass
 
-            prev_poses = np.array(prev_poses)
-            current_poses = np.array(current_poses)
+    def calculate_motion_features(
+        self,
+        prev_poses: list[list[list[float]]],
+        current_poses: list[list[list[float]]],
+    ) -> dict:
+        """
+        Calculate motion features between consecutive frames.
 
-            if prev_poses.shape == current_poses.shape:
-                displacement = np.linalg.norm(current_poses - prev_poses, axis=2)
-                average_speed = np.mean(displacement)
-                motion_intensity = np.std(displacement)
-                sudden_movements = np.sum(
-                    displacement > np.mean(displacement) + 2 * np.std(displacement)
-                )
+        Args:
+            prev_poses: List of keypoints for all people in previous frame
+            current_poses: List of keypoints for all people in current frame
 
-                return {
-                    "average_speed": float(average_speed),
-                    "motion_intensity": float(motion_intensity),
-                    "sudden_movements": int(sudden_movements),
-                }
+        Returns:
+            dict: {
+                "average_speed": float,
+                "motion_intensity": float,
+                "sudden_movements": int
+            }
+        """
+        return {
+            "average_speed": calc_avg_speed(prev_poses, current_poses),
+            "motion_intensity": calc_motion_intensity(prev_poses, current_poses),
+            "sudden_movements": calc_sudden_movements(prev_poses, current_poses),
+        }
 
-            return {"average_speed": 0, "motion_intensity": 0, "sudden_movements": 0}
+    def calculate_interactions(
+        self,
+        person_boxes: list[list[float]],
+        current_poses: list[list[list[float]]],
+        tracked_persons: dict,
+    ) -> list[dict]:
+        """
+        Calculate interactions between people based on bounding boxes and keypoints.
 
-        except Exception as e:
-            print(f"Error in motion calculation: {e}")
-            return {"average_speed": 0, "motion_intensity": 0, "sudden_movements": 0}
+        Args:
+            person_boxes: List of bounding boxes [[x1,y1,x2,y2], ...] for each person
+            current_poses: List of keypoints for each person
+            tracked_persons: Dict mapping person_id -> last tracked box
 
-    def calculate_interactions(self, person_boxes, current_poses, tracked_persons):
-        """Calculate interactions between people."""
+        Returns:
+            List of dictionaries describing interactions between people
+        """
         interactions = []
 
         if len(person_boxes) < 2:
@@ -48,6 +71,7 @@ class InteractionAnalyzer:
         for i in range(len(person_boxes)):
             for j in range(i + 1, len(person_boxes)):
                 try:
+                    # Ensure poses exist for both people
                     if i >= len(current_poses) or j >= len(current_poses):
                         continue
 
@@ -65,16 +89,7 @@ class InteractionAnalyzer:
                     if id1 is None or id2 is None:
                         continue
 
-                    center1 = [(box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2]
-                    center2 = [(box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2]
-                    distance = np.sqrt(
-                        (center1[0] - center2[0]) ** 2 + (center1[1] - center2[1]) ** 2
-                    )
-                    avg_size = (
-                        (box1[2] - box1[0]) * (box1[3] - box1[1])
-                        + (box2[2] - box2[0]) * (box2[3] - box2[1])
-                    ) / 2
-
+                    # Build interaction dictionary using utils
                     interaction = {
                         "person1_idx": i,
                         "person2_idx": j,
@@ -82,17 +97,20 @@ class InteractionAnalyzer:
                         "person2_id": id2,
                         "box1": box1,
                         "box2": box2,
-                        "center1": center1,
-                        "center2": center2,
-                        "distance": distance,
-                        "relative_distance": distance / (avg_size**0.5),
+                        "center1": get_box_center(box1),
+                        "center2": get_box_center(box2),
+                        "distance": euclidean_distance(
+                            get_box_center(box1), get_box_center(box2)
+                        ),
+                        "relative_distance": relative_distance(box1, box2),
                         "keypoints": {
                             "person1": pose1,
                             "person2": pose2,
-                            "relative": (np.array(pose2) - np.array(pose1)).tolist(),
+                            "relative": relative_keypoints(pose1, pose2),
                         },
                     }
                     interactions.append(interaction)
+
                 except Exception as e:
                     print(f"Skipping interaction {i}-{j}: {e}")
                     continue

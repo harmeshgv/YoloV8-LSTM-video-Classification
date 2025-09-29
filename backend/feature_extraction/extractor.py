@@ -25,9 +25,6 @@ class VideoFeatureExtractor:
         self.conf_threshold = CONF_THRESHOLD
         self.prev_poses = None
 
-    # Add methods: reset, extract_features, convert_numpy_to_python
-    def reset(self):
-        """Reset the extractor for a new video"""
         self.person_tracker.reset()
         self.prev_poses = None
 
@@ -148,6 +145,7 @@ class VideoFeatureExtractor:
                 "motion_intensity": 0,
                 "sudden_movements": 0,
             }
+
             if self.prev_poses and current_poses:
                 try:
                     motion_features = (
@@ -157,6 +155,8 @@ class VideoFeatureExtractor:
                     )
                 except Exception as e:
                     print(f"Motion calculation error: {e}")
+
+            frame_data["motion_features"] = motion_features
             self.prev_poses = current_poses
 
             # Create interactions
@@ -167,7 +167,6 @@ class VideoFeatureExtractor:
             )
 
             # Add motion features to frame data
-            frame_data["motion_features"] = motion_features
 
             annotated_frame = self.visualizer.draw_detections(
                 frame, det_results, pose_results, scale_info, tracked_persons
@@ -179,17 +178,7 @@ class VideoFeatureExtractor:
             print(f"Frame {frame_idx} failed completely: {e}")
             return None, frame
 
-    def convert_numpy_to_python(self, obj):
-        """Recursively convert NumPy objects to native Python types."""
-        if isinstance(obj, np.generic):
-            return obj.item()
-        elif isinstance(obj, dict):
-            return {
-                key: self.convert_numpy_to_python(value) for key, value in obj.items()
-            }
-        elif isinstance(obj, list):
-            return [self.convert_numpy_to_python(item) for item in obj]
-        elif isinstance(obj, tuple):
-            return tuple(self.convert_numpy_to_python(item) for item in obj)
-        else:
-            return obj
+    def reset(self):
+        """Reset state for a new video."""
+        self.person_tracker.reset()
+        self.prev_poses = None
