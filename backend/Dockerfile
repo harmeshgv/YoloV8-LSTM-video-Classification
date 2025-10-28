@@ -1,7 +1,7 @@
 # ------------------------------------------------------------
 # Base image
 # ------------------------------------------------------------
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim
 
 # ------------------------------------------------------------
 # Environment
@@ -13,6 +13,10 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
+RUN mkdir -p /app/backend/output && chmod -R 777 /app/backend/output
+
+
+
 # ------------------------------------------------------------
 # Working directory inside container
 # ------------------------------------------------------------
@@ -22,8 +26,8 @@ WORKDIR /app
 # Copy application files
 # ------------------------------------------------------------
 # Copy only what’s required first (so Docker can cache layers)
-COPY requirements.txt pyproject.toml ./
-COPY . ./backend
+
+COPY . .
 
 # ------------------------------------------------------------
 # System + Python dependencies
@@ -58,4 +62,4 @@ EXPOSE 8000
 # ------------------------------------------------------------
 # Start FastAPI with auto-reload (remove --reload for production)
 # ------------------------------------------------------------
-CMD ["uvicorn", "backend.fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]

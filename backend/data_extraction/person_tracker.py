@@ -1,6 +1,6 @@
 import numpy as np
-from backend.utils.iou_utils import calculate_iou
-from backend.utils.id_utils import get_new_id
+from utils.iou_utils import calculate_iou
+from utils.id_utils import get_new_id
 
 
 class PersonTracker:

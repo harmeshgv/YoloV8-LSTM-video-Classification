@@ -1,7 +1,0 @@
-streamlit
-opencv-python
-tqdm
-ultralytics
-scikit-learn
-torch
-torchvision

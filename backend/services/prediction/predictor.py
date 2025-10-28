@@ -1,75 +1,40 @@
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+import joblib
+from config import MAIN_MODEL
+import pandas as pd
 
 
 class ViolencePredictor:
     def __init__(self):
-        self.scaler = MinMaxScaler()
+        self.model = joblib.load(MAIN_MODEL)
 
-    def preprocess_data(self, df):
-        # Normalize coordinates, distances and keypoints
-        # Drop confidence columns
-        # Scale selected columns
-        # Similar as existing code...
-        """
-        Preprocess the data by normalizing box coordinates, center coordinates, distances, and keypoints.
-        """
-        # Normalize box coordinates
-        frame_height = df["frame_height"]
-        frame_width = df["frame_width"]
-        df["box1_x_min"] = df["box1_x_min"] / frame_width
-        df["box1_y_min"] = df["box1_y_min"] / frame_height
-        df["box1_x_max"] = df["box1_x_max"] / frame_width
-        df["box1_y_max"] = df["box1_y_max"] / frame_height
-
-        df["box2_x_min"] = df["box2_x_min"] / frame_width
-        df["box2_y_min"] = df["box2_y_min"] / frame_height
-        df["box2_x_max"] = df["box2_x_max"] / frame_width
-        df["box2_y_max"] = df["box2_y_max"] / frame_height
-
-        # Normalize center coordinates
-        df["center1_x"] = df["center1_x"] / frame_width
-        df["center1_y"] = df["center1_y"] / frame_height
-
-        df["center2_x"] = df["center2_x"] / frame_width
-        df["center2_y"] = df["center2_y"] / frame_height
-
-        # Normalize distances
-        max_distance = np.sqrt(frame_width**2 + frame_height**2)
-        df["distance"] = df["distance"] / max_distance
-        df["relative_distance"] = df["relative_distance"] / max_distance
-
-        # Drop confidence columns
-        drop_columns = (
-            [f"person1_kp{i}_conf" for i in range(17)]
-            + [f"person2_kp{i}_conf" for i in range(17)]
-            + [f"relative_kp{i}_conf" for i in range(17)]
-        )
-
-        existing_columns = [col for col in drop_columns if col in df.columns]
-        df = df.drop(columns=existing_columns)
-
-        # Normalize keypoints
-        for i in range(17):
-            for prefix in ["person1_kp", "person2_kp", "relative_kp"]:
-                x_col = f"{prefix}{i}_x"
-                y_col = f"{prefix}{i}_y"
-
-                if x_col in df.columns:
-                    df[x_col] = df[x_col] / frame_width
-                if y_col in df.columns:
-                    df[y_col] = df[y_col] / frame_height
-
-        # Scale specific columns
-        df["distance"] = self.scaler.fit_transform(df[["distance"]])
-        df["relative_distance"] = self.scaler.fit_transform(df[["relative_distance"]])
-        df["motion_average_speed"] = self.scaler.fit_transform(
-            df[["motion_average_speed"]]
-        )
-        df["motion_motion_intensity"] = self.scaler.fit_transform(
-            df[["motion_motion_intensity"]]
-        )
-        return df
+    def _preprocess_data_pdict(self, data: pd.DataFrame) -> pd.DataFrame:
+        cols_to_drop = [
+            "video_name",
+            "frame_index",
+            "timestamp",
+            "frame_width",
+            "frame_height",
+            "person1_id",
+            "person2_id",
+            "person1_idx",
+            "person2_idx",
+        ]
+        data = data.drop(columns=cols_to_drop)
+        return data
 
     def predict(self, data):
-        return 0
+        data = self._preprocess_data_pdict(data)
+        y_pred = self.model.predict(data)
+        print(y_pred)
+
+        return y_pred
+
+
+if __name__ == "__main__":
+    import pandas as pd
+
+    data = pd.read_csv("data/fight_train.csv")
+    data = data[0:20]
+    print("dataloaded")
+    VP = ViolencePredictor()
+    VP.predict(data)

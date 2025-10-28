@@ -3,6 +3,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DETECT_MODEL = os.path.join(BASE_DIR, "models", "yolov8n.pt")
 POSE_MODEL = os.path.join(BASE_DIR, "models", "yolov8n-pose.pt")
+MAIN_MODEL = os.path.join(BASE_DIR, "models", "xgb_model.pkl")
 
 
 # Thresholds and params

@@ -1,10 +1,10 @@
 import numpy as np
-from backend.utils.motion_utils import (
+from utils.motion_utils import (
     calc_avg_speed,
     calc_motion_intensity,
     calc_sudden_movements,
 )
-from backend.utils.interaction_utils import (
+from utils.interaction_utils import (
     get_box_center,
     euclidean_distance,
     relative_distance,

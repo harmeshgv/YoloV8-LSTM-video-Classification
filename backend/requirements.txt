@@ -1,7 +1,9 @@
-uvicorn
-pandas
 fastapi
+uvicorn[standard]
+numpy
+xgboost
 opencv-python
-ultralytics
+pandas
 scikit-learn
 python-multipart
+# any other dependencies your backend uses

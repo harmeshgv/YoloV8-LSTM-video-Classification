@@ -2,8 +2,8 @@ import os
 import cv2
 import torch
 import pandas as pd
-from backend.feature_extraction.extractor import VideoFeatureExtractor
-from backend.utils.csv_utils import _create_interaction_row
+from feature_extraction.extractor import VideoFeatureExtractor
+from utils.csv_utils import _create_interaction_row
 
 
 class VideoDataExtractor:
@@ -13,23 +13,23 @@ class VideoDataExtractor:
     def extract_video_data(
         self,
         video_path,
-        output_csv_path,
+        output_csv_path=None,
         output_folder=None,
         show_video=False,
         save_video=False,
     ):
         """
-        Extract data from a video file.
+        Extract interaction data from a video file and return a DataFrame.
 
         Args:
             video_path: Path to input video
-            output_csv_path: Path to save CSV output
-            output_folder: Folder to save output video
+            output_csv_path: Optional path to save CSV output
+            output_folder: Optional folder to save annotated video
             show_video: Whether to display video during processing
             save_video: Whether to save output video
 
         Returns:
-            Tuple of (frame_width, frame_height, num_interactions)
+            pandas.DataFrame containing extracted interactions
         """
         cap = None
         video_writer = None
@@ -51,16 +51,13 @@ class VideoDataExtractor:
 
             video_name = os.path.splitext(os.path.basename(video_path))[0]
 
-            # Set frame skip based on resolution
+            # Configure resolution-based settings
             batch_size, frame_skip = self.extractor.preprocessor.set_resolution_config(
                 frame_width, frame_height
             )
             self.extractor.preprocessor.frame_skip = frame_skip
 
-            print(f"Processing video: {frame_width}x{frame_height} at {fps} fps")
-            print(f"Using frame_skip: {frame_skip}")
-
-            # Initialize video writer if needed
+            # Initialize video writer if required
             if output_folder and save_video:
                 os.makedirs(output_folder, exist_ok=True)
                 output_video_path = os.path.join(
@@ -73,7 +70,7 @@ class VideoDataExtractor:
                     (frame_width, frame_height),
                 )
 
-            # Reset extractor for new video
+            # Reset extractor for a fresh start
             self.extractor.reset()
 
             # Process frames
@@ -83,13 +80,11 @@ class VideoDataExtractor:
                 if not ret:
                     break
 
-                # Extract features
                 frame_data, annotated_frame = self.extractor.extract_features(
                     frame, frame_idx
                 )
 
                 if frame_data is not None:
-                    # Process interactions
                     for interaction in frame_data["interactions"]:
                         interaction_id = (
                             interaction["person1_id"],
@@ -108,34 +103,30 @@ class VideoDataExtractor:
                             )
                             csv_data.append(row)
 
-                    # Write frame to output video
                     if video_writer is not None and annotated_frame is not None:
                         video_writer.write(annotated_frame)
 
-                    # Show video if enabled
                     if show_video and annotated_frame is not None:
                         cv2.imshow("Video Data Extraction", annotated_frame)
-                        key = cv2.waitKey(1) & 0xFF
-                        if key == ord("q"):
+                        if cv2.waitKey(1) & 0xFF == ord("q"):
                             break
 
-                # Clear memory periodically
                 if frame_idx % 100 == 0:
                     torch.cuda.empty_cache()
 
+            # ✅ Return only the DataFrame
             if csv_data:
                 df = pd.DataFrame(csv_data)
-
-                if os.path.exists(output_csv_path):
-                    # Append to existing CSV
-                    df.to_csv(output_csv_path, mode="a", header=False, index=False)
-                    print(f"Appended {len(csv_data)} interactions to {output_csv_path}")
-                else:
-                    # Save new CSV
-                    df.to_csv(output_csv_path, index=False)
-                    print(f"Saved {len(csv_data)} interactions to {output_csv_path}")
-
-            return frame_width, frame_height, len(csv_data)
+                if output_csv_path:
+                    df.to_csv(
+                        output_csv_path,
+                        mode="a" if os.path.exists(output_csv_path) else "w",
+                        header=not os.path.exists(output_csv_path),
+                        index=False,
+                    )
+                return df
+            else:
+                return pd.DataFrame()  # empty DataFrame if nothing found
 
         finally:
             if cap is not None:
