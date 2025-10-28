@@ -1,7 +1,7 @@
 // src/api.ts
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000"; // FastAPI backend
+const BASE_URL = "https://harmesh95-vio.hf.space"; // FastAPI backend
 
 // Create axios instance with better error handling
 const api = axios.create({
